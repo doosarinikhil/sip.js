@@ -28,9 +28,6 @@ class CustomSessionDescriptionHandler implements SessionDescriptionHandler {
     hasDescription(contentType: string): boolean {
             return contentType === 'application/sdp'
     }
-    holdModifier(sessionDescription: RTCSessionDescriptionInit): Promise<RTCSessionDescriptionInit> {
-        throw new Error('Method not implemented.');
-    }
     rollbackDescription?(): Promise<void> {
         throw new Error('Method not implemented.');
     }

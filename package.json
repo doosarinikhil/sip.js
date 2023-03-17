@@ -57,7 +57,7 @@
     "react-bootstrap": "^2.7.2",
     "react-dom": "^18.2.0",
     "remove": "^0.1.5",
-    "sip.js": "^0.16.0",
+    "sip.js": "^0.21.2",
     "tslib": "^2.5.0"
   }
 }
