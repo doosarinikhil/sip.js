@@ -36,12 +36,11 @@ class CustomSessionDescriptionHandler implements SessionDescriptionHandler {
     }
 
     async getDescription(options?: SessionDescriptionHandlerOptions, modifiers?: Array<SessionDescriptionHandlerModifier>): Promise<BodyAndContentType> {
-        if(outGoingCall)
+        if(outGoingCall){
             emitMessage('initPeerConnection');
-        return Promise.resolve().then(() => {
-            if(!outGoingCall) return;
-            return emitMessage('getMediaStream');
-        }).then(async () => {
+            emitMessage('getMediaStream');
+        }
+        return Promise.resolve().then(async () => {
             //TO-DO Need to handle this.
             await sleep(4);
             emitMessage('createOfferOrAnswer', {  modifiers });
@@ -59,57 +58,35 @@ class CustomSessionDescriptionHandler implements SessionDescriptionHandler {
         });
     }
     setDescription(sessionDescription: string, options?: SessionDescriptionHandlerOptions | any, modifiers?: SessionDescriptionHandlerModifier[]): Promise<void> {
-        if(!outGoingCall)
-            emitMessage('initPeerConnection')
+        if(!outGoingCall){
+            emitMessage('initPeerConnection');
+            emitMessage('getMediaStream');
+        }
         if (!Array.isArray(modifiers)) {
             modifiers = [modifiers];
         }
-        modifiers = modifiers.concat((this as any).modifiers);
         const description = {
             type: hasOffer("local") ? "answer" : "offer",
             sdp: sessionDescription
         };
-        return Promise.resolve().then(() => {
-            if(outGoingCall)return;
-            return emitMessage('getMediaStream');
-        }).then(() => reducePromises(modifiers, description))
-            .catch((e) => {
-                let message = "The modifiers did not resolve successfully.";
-                if (e.name) {
-                    message += " " + e.name;
-                }
-                if (e.message) {
-                    message += " " + e.message;
-                }
-                throw message;
-            }).then((modifiedDescription) => {
-                emitMessage('setDescription', { modifiedDescription });
-                return;
-            }).catch((e) => {
-                
-                let message = "setRemoteDescription failed.";
-                if (e.name) {
-                    message += " " + e.name;
-                }
-                if (e.message) {
-                    message += " " + e.message;
-                }
-                throw message;
-            }).then(() => {
-                return;
-            });
+        return reducePromises(modifiers, description).then((modifiedDescription) => {
+            emitMessage('setDescription', { modifiedDescription });
+            return;
+        }).catch((e) => {
+            throw e;
+        });
     }
 }
 
-function hasOffer(where: string): boolean {
+const hasOffer = (where: string): boolean => {
     const offerState = "have-" + where + "-offer";
     return peerConnectionSignalingState === offerState;
 }
-self.addEventListener("connect", function (connectEvent) {
+self.addEventListener("connect", (connectEvent) => {
 
     connectionPort = connectEvent.ports[0];
 
-    connectionPort.addEventListener("message", function (event: any) {
+    connectionPort.addEventListener("message", (event: any) => {
         const data = event.data;
         console.log("onmessage ---", data);
         switch (data.type) {
@@ -148,10 +125,10 @@ self.addEventListener("connect", function (connectEvent) {
 
 }, false);
 
-function emitMessage(type : string, data: any = {}) {
+const emitMessage = (type : string, data: any = {}) => {
     connectionPort && connectionPort.postMessage && connectionPort.postMessage({ type, ...data })
 }
-function register() {
+const register = () => {
     const uri = UserAgent.makeURI(`sip:${registrationData.exNumber}@${registrationData.proxyAddress}`);
     const transportOptions = { server: registrationData.wsUrl }
     const userAgentOptions: UserAgentOptions = {
@@ -177,7 +154,7 @@ function register() {
     });
 }
 
-function call(number: number) {
+const call = (number: number) => {
     if (!number) {
         console.log('number required to invite');
         return;
@@ -207,21 +184,21 @@ function call(number: number) {
     inviter.invite();
 }
 
-function sleep(seconds: number): Promise<boolean> {
+const sleep = (seconds: number): Promise<boolean> => {
     return new Promise((resolve, reject) => {
         setTimeout(() => {
             resolve(true);
         }, seconds * 1000)
     })
 }
-function reducePromises(arr: Array<any>, val: any): Promise<any> {
+const reducePromises = (arr: Array<any>, val: any): Promise<any> => {
     return arr.reduce((acc, fn) => {
         acc = acc.then(fn);
         return acc;
     }, Promise.resolve(val));
 }
 
-function endSession() {
+const endSession = () => {
     localDescription = null;
     outGoingCall = false;
     peerConnectionSignalingState = null;
@@ -230,7 +207,7 @@ function endSession() {
     userAgent && userAgent.stop();
 }
 
-function endCall() {
+const endCall = () => {
     switch(inviter.state) {
       case SessionState.Initial:
       case SessionState.Establishing:
@@ -241,6 +218,6 @@ function endCall() {
         break;
     }
   }
-function reconnectSession() {
+const reconnectSession = () => {
     inviter && inviter.invite();
 }
