@@ -6,7 +6,7 @@ const Dotenv = require('dotenv-webpack');
 module.exports = {
   entry: {
         main: './src/index.tsx',
-        sharedWorker: './src/worker.ts'
+        sharedWorker: './src/worker/worker.ts'
     },
   output: {
     path: path.resolve(__dirname, "build"),
@@ -24,7 +24,6 @@ module.exports = {
       {
         test: /\.(js|jsx)$/,
         exclude: /node_modules/,
-        include: /node_modules\/sip.js\/lib/,
         use: ["babel-loader"],
       },
       {
