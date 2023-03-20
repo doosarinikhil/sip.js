@@ -1,6 +1,6 @@
 import { BodyAndContentType, SessionDescriptionHandlerModifier } from 'sip.js';
 import { SessionDescriptionHandler, SessionDescriptionHandlerOptions } from 'sip.js/lib/api/session-description-handler'
-import { CustomEventClass } from '../call/events';
+import { CustomEventClass } from '../helpers/events';
 import { sleep, reducePromises } from '../helpers/helper';
 
 export class CustomSessionDescriptionHandler extends CustomEventClass implements SessionDescriptionHandler {
@@ -12,7 +12,7 @@ export class CustomSessionDescriptionHandler extends CustomEventClass implements
         this.emit('closed');
     }
     hasDescription(contentType: string): boolean {
-            return contentType === 'application/sdp'
+        return contentType === 'application/sdp'
     }
     rollbackDescription?(): Promise<void> {
         throw new Error('Method not implemented.');
@@ -25,7 +25,7 @@ export class CustomSessionDescriptionHandler extends CustomEventClass implements
         return Promise.resolve().then(async () => {
             //TO-DO Need to handle this.
             await sleep(4);
-            this.emit('createSDP', {  modifiers });
+            this.emit('createSDP', { modifiers });
             await sleep(4);
             if (!this.localDescription) await sleep(4);
             return this.localDescription;

@@ -24,7 +24,7 @@ export class CustomEventClass {
         }
     }
 
-    emit(type: string, payload?: any ) {
+    emit(type: string, payload?: any) {
         const eventListeners = this.listeners[type];
         if (eventListeners) {
             eventListeners.forEach((listener) => {
@@ -33,7 +33,7 @@ export class CustomEventClass {
         }
     }
 
-    emitMessage(type: string, payload?: any ){
+    emitMessage(type: string, payload?: any) {
         const eventListeners = this.listeners['message'];
         if (eventListeners) {
             eventListeners.forEach((listener) => {

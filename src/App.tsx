@@ -1,12 +1,12 @@
 /* eslint-disable react/react-in-jsx-scope */
 // App.tsx
 
-import { useEffect, useState, createRef, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Container from "react-bootstrap/Container";
 import Navbar from "react-bootstrap/Navbar";
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
-import { CallService } from './call/call';
+import { CallService } from './call/callService';
 import { LogLevel, RegistrationData } from './interfaces/interface';
 
 
@@ -19,8 +19,12 @@ const App = () => {
 
 
   useEffect(() => {
-    setCallService(new CallService())
-      ;
+    setCallService(new CallService());
+
+    return () => {
+      if(callService)
+      callService.end();
+    }
   }, []);
 
   useEffect(() => {
@@ -40,6 +44,7 @@ const App = () => {
       callService.once('localStream', renderLocalStream);
     }
     return () => {
+      if (!callService) return;
       callService.off('state', updateCallStatus);
       callService.off('remoteStream', renderRemoteStream);
       callService.off('localStream', renderLocalStream);
