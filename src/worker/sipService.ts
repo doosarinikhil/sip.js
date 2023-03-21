@@ -24,7 +24,10 @@ export class SipService extends CustomEventClass {
             console.log("delegate disconnected")
         },
         onInvite(invitation: Invitation) {
+            // TO-DO  we need to pass this event to the client, we can take action from there for accept /reject
             console.log("delegate onInvite")
+            invitation.accept();
+            this.session = invitation;
         },
         onRefer(referral: Referral) {
             console.log("delegate onRefer")

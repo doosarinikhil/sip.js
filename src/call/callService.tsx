@@ -1,4 +1,4 @@
-import { RegistrationData } from "../interfaces/interface";
+import { CallOptions, RegistrationData } from "../interfaces/interface";
 import { CustomEventClass } from "../helpers/events";
 import { PeerConnectionFactory } from "./peerConnectionFactory";
 
@@ -11,7 +11,8 @@ class CallService extends CustomEventClass {
     private sharedWorker: SharedWorker;
     private localStream: MediaStream;
     private peerConnection: PeerConnectionFactory;
-    callStatus: string = 'unregistered';
+    private constrains: MediaStreamConstraints = { audio: true, video: false };
+    public callStatus: string = 'unregistered';
     private initSharedWorker() {
         this.sharedWorker = (new SharedWorker('./sharedWorker.bundle.js'));
         this.sharedWorker.port.onmessage = ({ data }) => {
@@ -42,6 +43,7 @@ class CallService extends CustomEventClass {
                     break;
                 case 'registrationState':
                     this.setCallState(data.state ? 'registred' : 'unregistered');
+                    break;
                 default:
                     break;
             }
@@ -66,12 +68,12 @@ class CallService extends CustomEventClass {
     private sendRemoteStream(stream: MediaStream) {
         this.emit('remoteStream', stream);
     }
-    private async getStreamAndAddTracks(): Promise<MediaStream> {
+    private getStreamAndAddTracks(): Promise<MediaStream> {
         return new Promise(async (resolve, reject) => {
             if (this.localStream) {
                 resolve(this.localStream);
             }
-            this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+            this.localStream = await navigator.mediaDevices.getUserMedia(this.constrains);
             if (this.localStream) {
                 this.peerConnection.addStream(this.localStream);
                 resolve(this.localStream);
@@ -98,8 +100,16 @@ class CallService extends CustomEventClass {
         this.setCallState('registering');
         this.postMessage('register', { registrationData });
     }
-    call(number: number) {
-        this.postMessage('call', { number });
+    call(callOptions: CallOptions) {
+        if(callOptions.media){
+            if(callOptions.media.stream){
+                this.localStream = callOptions.media.stream
+            }else if(callOptions.media.audio || callOptions.media.video){
+                this.constrains.audio = callOptions.media.audio ? callOptions.media.audio : false;
+                this.constrains.video = callOptions.media.video ? callOptions.media.video : false;
+            }
+        }
+        this.postMessage('call', callOptions);
     }
     disconnect() {
         this.postMessage('disconnect');

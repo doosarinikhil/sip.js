@@ -57,7 +57,7 @@ export class PeerConnectionFactory extends CustomEventClass {
             const localDescription = this.createRTCSessionDescriptionInit(this.peerConnection.localDescription);
             return reducePromises(modifiers, localDescription);
         }
-        let RTCOfferOptions: RTCOfferOptions = {};
+        const RTCOfferOptions: RTCOfferOptions = {};
         if (iceRestart) {
             RTCOfferOptions.iceRestart = iceRestart;
         }

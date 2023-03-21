@@ -7,7 +7,7 @@ import Navbar from "react-bootstrap/Navbar";
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import { CallService } from './call/callService';
-import { LogLevel, RegistrationData } from './interfaces/interface';
+import { CallOptions, LogLevel, RegistrationData } from './interfaces/interface';
 
 
 
@@ -52,7 +52,7 @@ const App = () => {
   }, [callService, audioRef])
 
   const register = () => {
-    let registrationData: RegistrationData = {
+    const registrationData: RegistrationData = {
       proxyAddress: process.env.PROXY_ADDRESS,
       exNumber: parseInt(process.env.EX_NUMBER),
       userName: process.env.USERNAME,
@@ -64,7 +64,12 @@ const App = () => {
   }
 
   const call = () => {
-    callService.call(parseInt(process.env.CALL_TO))
+    const options : CallOptions = {
+      number: parseInt(process.env.CALL_TO),
+      media: { audio: true, video: false }
+    }
+    // here in the media you can pass our own stream  to trigger a call with that stream.
+    callService.call(options);
   }
 
   const disconnect = () => {
@@ -137,7 +142,7 @@ const App = () => {
         </Card>
       }
       <div className="mt-4">
-        <audio ref={audioRef} autoPlay playsInline />
+        <audio ref={audioRef} autoPlay />
       </div>
     </>
   )
