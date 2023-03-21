@@ -12,7 +12,8 @@ export class SipService extends CustomEventClass {
     }
     private userAgent: UserAgent;
     private registerer: Registerer;
-    private session: Inviter;
+    private inviter: Inviter;
+    private invitation: Invitation;
     private registrationData: RegistrationData
     private customSDH: CustomSessionDescriptionHandler;
 
@@ -25,16 +26,25 @@ export class SipService extends CustomEventClass {
         },
         onInvite(invitation: Invitation) {
             // TO-DO  we need to pass this event to the client, we can take action from there for accept /reject
-            console.log("delegate onInvite")
-            invitation.accept();
-            this.session = invitation;
+            this.invitation = invitation;
+            this.emitMessage('gotInvitation');
         },
         onRefer(referral: Referral) {
             console.log("delegate onRefer")
+            this.emitMessage('gotRefer');
         }
 
     }
-
+    accept(){
+        this.emitMessage('initPeerConnection');
+        this.emitMessage('getMediaStream');
+        this.invitation.accept();
+        this.customSDH = (this.invitation.sessionDescriptionHandler as CustomSessionDescriptionHandler);
+        this.listenCustomSDHEvents();
+    }
+    reject(){
+        this.invitation.reject();
+    }
     private register() {
         const uri = UserAgent.makeURI(`sip:${this.registrationData.exNumber}@${this.registrationData.proxyAddress}`);
         const transportOptions = { server: this.registrationData.wsUrl }
@@ -68,8 +78,8 @@ export class SipService extends CustomEventClass {
             return;
         }
         const target: URI | any = UserAgent.makeURI(`sip:${number}@${this.registrationData.proxyAddress}`);
-        this.session = new Inviter(this.userAgent, target);
-        this.session.stateChange.addListener((state) => {
+        this.inviter = new Inviter(this.userAgent, target);
+        this.inviter.stateChange.addListener((state) => {
             console.log(`Session state changed to ${state}`);
             switch (state) {
                 case SessionState.Initial:
@@ -90,10 +100,23 @@ export class SipService extends CustomEventClass {
         });
         this.emitMessage('initPeerConnection');
         this.emitMessage('getMediaStream');
-        this.session.invite();
-        this.customSDH = (this.session.sessionDescriptionHandler as CustomSessionDescriptionHandler);
+        this.inviter.invite();
+        this.customSDH = (this.inviter.sessionDescriptionHandler as CustomSessionDescriptionHandler);
+        this.listenCustomSDHEvents();
+    }
+
+    private listenCustomSDHEvents(){
+        if(!this.customSDH) return;
         this.customSDH.on('remoteSDP', this.setRemoteSDP.bind(this));
         this.customSDH.on('createSDP', this.createSDP.bind(this));
+        this.customSDH.on('closed',this.sendClosedEvent.bind(this));
+    }
+
+    private removeCustomSDHEvents(){
+        if(!this.customSDH) return;
+        this.customSDH.off('remoteSDP', this.setRemoteSDP.bind(this));
+        this.customSDH.off('createSDP', this.createSDP.bind(this));
+        this.customSDH.off('closed',this.sendClosedEvent.bind(this));
     }
     private setRemoteSDP(data: object) {
         this.emitMessage('setDescription', data)
@@ -101,6 +124,9 @@ export class SipService extends CustomEventClass {
     private createSDP(data: object) {
 
         this.emitMessage('createOfferOrAnswer', data);
+    }
+    private sendClosedEvent(){
+        this.emitMessage('end');
     }
     set peerConnectionSignalingState(val: string) {
         this.customSDH.peerConnectionSignalingState = val;
@@ -111,32 +137,44 @@ export class SipService extends CustomEventClass {
     }
 
     endSession() {
-        this.session && this.endCall();
-        this.customSDH.off('remoteSDP', this.setRemoteSDP);
-        this.customSDH.off('createSDP', this.createSDP);
+        this.removeCustomSDHEvents();
+        this.inviter && this.endCall();
         this.registerer && this.registerer.unregister();
         this.userAgent && this.userAgent.stop();
         this.customSDH = null;
-        this.session = null;
+        this.inviter = null;
         this.registerer = null;
         this.userAgent = null;
     }
 
     endCall() {
-        switch (this.session.state) {
-            case SessionState.Initial:
-            case SessionState.Establishing:
-                this.session.cancel();
-                break;
-            case SessionState.Established:
-                this.session.bye();
-                break;
+        if(this.inviter){
+            switch (this.inviter.state) {
+                case SessionState.Initial:
+                case SessionState.Establishing:
+                    this.inviter.cancel();
+                    break;
+                case SessionState.Established:
+                    this.inviter.bye();
+                    break;
+            }
+        }else{
+            switch (this.invitation.state) {
+                case SessionState.Initial:
+                case SessionState.Establishing:
+                    this.invitation.reject();
+                    break;
+                case SessionState.Established:
+                    this.invitation.bye();
+                    break;
+            }
         }
     }
     reconnectSession() {
         this.emitMessage('initPeerConnection');
         this.emitMessage('getMediaStream');
-        this.session && this.session.invite();
+        this.inviter && this.inviter.invite();
+        this.invitation && this.invitation.invite();
     }
 
 

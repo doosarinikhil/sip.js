@@ -36,6 +36,12 @@ self.addEventListener("connect", (connectEvent) => {
                     sipInstance.off('message', emitMessage);
                     sipInstance = null;
                     break;
+                case 'accept':
+                    sipInstance.accept();
+                    break;
+                case 'reject':
+                    sipInstance.reject();
+                    break; 
                 default:
                     break;
             }

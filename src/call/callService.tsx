@@ -1,4 +1,4 @@
-import { CallOptions, RegistrationData } from "../interfaces/interface";
+import { callMediaOption, CallOptions, RegistrationData } from "../interfaces/interface";
 import { CustomEventClass } from "../helpers/events";
 import { PeerConnectionFactory } from "./peerConnectionFactory";
 
@@ -43,6 +43,16 @@ class CallService extends CustomEventClass {
                     break;
                 case 'registrationState':
                     this.setCallState(data.state ? 'registred' : 'unregistered');
+                    break;
+                case 'gotInvitation':
+                    this.emit('onInvitation');
+                    break;
+                case 'gotRefer':
+                    this.emit('onRefer');
+                    break;
+                case 'end':
+                    this.emit('ended');
+                    this.end();
                     break;
                 default:
                     break;
@@ -117,6 +127,19 @@ class CallService extends CustomEventClass {
         this.releaseMedia();
         this.setCallState('disconnected');
     }
+    accept(callOptions: callMediaOption) {
+        if (callOptions.stream) {
+            this.localStream = callOptions.stream
+        } else if (callOptions.audio || callOptions.video) {
+            this.constrains.audio = callOptions.audio ? callOptions.audio : false;
+            this.constrains.video = callOptions.video ? callOptions.video : false;
+        }
+        this.postMessage('accept');
+    }
+
+    reject(){
+        this.postMessage('reject');
+    }
     async reconnect() {
         this.peerConnection.iceRestart();
         await this.getStreamAndAddTracks().then(() => {
@@ -125,6 +148,7 @@ class CallService extends CustomEventClass {
     }
     end() {
         this.postMessage('endSession');
+        if(!this.peerConnection) return;
         this.peerConnection.end()
         this.peerConnection.off('peerConnectionSignalingState', this.sendSignalingstatus.bind(this));
         this.peerConnection.off('connected', this.setCallState.bind(this));

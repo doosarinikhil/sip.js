@@ -38,16 +38,38 @@ const App = () => {
     const renderLocalStream = (stream: MediaStream) => {
       console.log("local stream added");
     }
+
+    const onInvitation = (data: any) => {
+      console.log("Got invitation");
+      // get stream and we can pass the stream while accepting or we can pass the constrains
+      // callService.accept({ stream: localstream });
+      // callService.reject();
+    }
+
+    const onRefer = (data: any) => {
+      console.log("Got refere");
+    }
+
+    const onEnded = () =>{
+      setCallStatus('ended')
+    }
     if (callService) {
       callService.once('state', updateCallStatus);
       callService.once('remoteStream', renderRemoteStream);
       callService.once('localStream', renderLocalStream);
+      callService.once('onInvitation', onInvitation);
+      callService.once('onRefer', onRefer);
+      callService.once('ended', onEnded);
+      
     }
     return () => {
       if (!callService) return;
       callService.off('state', updateCallStatus);
       callService.off('remoteStream', renderRemoteStream);
       callService.off('localStream', renderLocalStream);
+      callService.off('onInvitation', onInvitation);
+      callService.off('onRefer', onRefer);
+      callService.off('ended', onEnded);
     }
   }, [callService, audioRef])
 
